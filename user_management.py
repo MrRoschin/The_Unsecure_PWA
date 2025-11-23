@@ -1,6 +1,7 @@
 import sqlite3 as sql
 import time
 import random
+import bcrypt
 
 
 def insertUser(username, password, DoB, salt):
@@ -17,35 +18,53 @@ def insertUser(username, password, DoB, salt):
 def retrieveUsers(username, password):
     con = sql.connect("database_files/database.db")
     cur = con.cursor()
+
     cur.execute(
-        "SELECT * FROM users WHERE username == ? AND password == ?",
-        (username, password),
+        "SELECT password FROM users WHERE username == ?",
+        (username,),
     )
-    if cur.fetchone() == None:
+    result = cur.fetchone()
+
+    if result == None:
         con.close()
         return False
     else:
-        # THIS STATEMENT IS LOOKING UP WHERE THE PASSWORD MATCHES ONLY
-        # cur.execute(f"SELECT * FROM users WHERE password = '{password}'")
-        # Plain text log of visitor count as requested by Unsecure PWA management
-        with open("visitor_log.txt", "r") as file:
-            number = int(file.read().strip())
-            number += 1
-        with open("visitor_log.txt", "w") as file:
-            file.write(str(number))
-        # Simulate response time of heavy app for testing purposes
-        time.sleep(random.randint(80, 90) / 1000)
+        # # THIS STATEMENT IS LOOKING UP WHERE THE PASSWORD MATCHES ONLY
+        # # cur.execute(f"SELECT * FROM users WHERE password = '{password}'")
+        # # Plain text log of visitor count as requested by Unsecure PWA management
+        # with open("visitor_log.txt", "r") as file:
+        #     number = int(file.read().strip())
+        #     number += 1
+        # with open("visitor_log.txt", "w") as file:
+        #     file.write(str(number))
+        # # Simulate response time of heavy app for testing purposes
+        # time.sleep(random.randint(80, 90) / 1000)
 
-        # VULNERABLE
-        # if cur.fetchone() == None:
-        #     con.close()
-        #     return False
-        # else:
-        #     con.close()
-        #     return True
+        # # VULNERABLE
+        # # if cur.fetchone() == None:
+        # #     con.close()
+        # #     return False
+        # # else:
+        # #     con.close()
+        # #     return True
 
+        # con.close()
+        # return True
+
+        hashed_password = result[0]
+        match = bcrypt.checkpw(password.encode(), hashed_password)
         con.close()
-        return True
+
+        if match:
+            with open("visitor_log.txt", "r") as file:
+                number = int(file.read().strip())
+                number += 1
+            with open("visitor_log.txt", "w") as file:
+                file.write(str(number))
+
+            return True
+        else:
+            return False
 
 
 def insertFeedback(feedback):
